@@ -131,12 +131,13 @@ document.addEventListener("keydown", function (input) {
       break;
     case "ArrowRight":
     case "KeyD":
+      console.log("right true")
       control.right = true;
       control.madeFirstInput = true;
       break;
     case "Space":
+      window.requestAnimationFrame(nextFrame);
       control.space = true;
-      control.madeFirstInput = true;
       break;
     case "Delete":
       wipeSave();
@@ -190,12 +191,12 @@ document.addEventListener("keyup", function (input) {
     case "ArrowUp":
     case "KeyW":
       control.up = false;
-      if (!control.down && !control.space) player.canJump = true;
+      if (!control.down) player.canJump = true;
       break;
     case "ArrowDown":
     case "KeyS":
       control.down = false;
-      if (!control.up && !control.space) player.canJump = true;
+      if (!control.up) player.canJump = true;
       break;
     case "ArrowLeft":
     case "KeyA":
@@ -204,16 +205,21 @@ document.addEventListener("keyup", function (input) {
     case "ArrowRight":
     case "KeyD":
       control.right = false;
+      console.log("right false")
       break;
     case "Space":
       control.space = false;
-      if (!control.up && !control.down) player.canJump = true;
       break;
     default:
       break;
   }
 });
+//#region gameloop
+var frameAdvance = true
+var lockFrame = false
+var oldTimestamp = performance.now()
 
+var totalFrames = 0
 var lastFrame = 0;
 var simReruns = 20;
 var sinceLastSave = 0;
@@ -221,12 +227,19 @@ var noFriction = false;
 var branchInProgress = true;
 function nextFrame(timeStamp) {
   // setup stuff
-  let dt = timeStamp - lastFrame;
+  if (lockFrame) {
+    oldTimestamp = timeStamp
+    lockFrame = false
+    return
+  }
+  let dt = (frameAdvance ? oldTimestamp : timeStamp) - lastFrame;
+  lockFrame = true
   if (dt === 0) {
     window.requestAnimationFrame(nextFrame);
     return;
   }
   if (control.madeFirstInput) {
+    totalFrames += 1;
     player.timePlayed += dt;
     if (branchInProgress) player.branchTime += dt;
   }
@@ -237,7 +250,9 @@ function nextFrame(timeStamp) {
   id("timer").innerHTML =
     formatTime(player.timePlayed, false) +
     "<br>" +
-    formatTime(player.branchTime, false);
+    formatTime(player.branchTime, false) +
+    "<br>" +
+    `${String(Math.floor(1000/dt))} ${totalFrames}`;
   sinceLastSave += dt;
   if (sinceLastSave >= 5000) {
     save();
@@ -990,7 +1005,7 @@ function nextFrame(timeStamp) {
       if (player.xv > player.moveSpeed / (noFriction ? 6 : 1))
         player.xv = player.moveSpeed / (noFriction ? 6 : 1);
     }
-    if (control.up || control.down || control.space) {
+    if (control.up || control.down) {
       if (player.canWalljump) {
         if (player.wallJumpDir === "left" && control.left) {
           player.canJump = false;
@@ -1025,9 +1040,11 @@ function nextFrame(timeStamp) {
         player.levelCoord[0] !== lvlxprev || player.levelCoord[1] !== lvlyprev
       );
   }
+
   window.requestAnimationFrame(nextFrame);
 }
-
+//#endregion gameloop
+//#region end gameloop
 function openInfo() {
   if (id("mainInfo").style.bottom == "0%") {
     id("mainInfo").style.bottom = "100%";
@@ -1100,7 +1117,7 @@ function wipeSave() {
     drawLevel();
     drawPlayer();
     adjustScreen(true);
-    if (!control.left && !control.right && !control.up && !control.down && !control.space) {
+    if (!control.left && !control.right && !control.up && !control.down) {
       control.madeFirstInput = false;
     }
   }

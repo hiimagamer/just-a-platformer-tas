@@ -1,11 +1,3 @@
-const defaultOptions = {
-  darkMode: false,
-  spawnDelay: 10,
-  timer: false,
-  wipeConfirm: true,
-  volume: 0.5
-};
-
 let options = {
   ...defaultOptions,
   ...JSON.parse(localStorage.getItem("just-some-options") ?? "{}")
